@@ -1,0 +1,8 @@
+- hosts: web
+ # gather_facts: false
+  become:  
+    true
+  become_method:
+    sudo
+  roles:
+   - nginx
