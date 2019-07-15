@@ -1,56 +1,56 @@
-#- name: Add epel-release repo
-#  yum:
-#    name: epel-release
-#    state: present
-#  tags:
-#    - repo
+- name: Add epel-release repo
+  yum:
+    name: epel-release
+    state: present
+  tags:
+    - repo
 
-#- name: Install a list of packages
-#  yum:
-#    name:
-#      - nginx
-#      - libselinux-python
-#      - unzip
-#    state: present
+- name: Install a list of packages
+  yum:
+    name:
+      - nginx
+      - libselinux-python
+      - unzip
+    state: present
+  tags:
+    - install
 
-#- name: Checking existing file id
-#  stat:
-#    path: /etc/nginx/{{ item.id }}.conf
-#  with_items: "{{ file_vars }}"
-#  register: check_file_id
+- name: Creates backup directory
+  file:
+    path: /etc/nginx/backup/
+    state: directory
 
-#- name: Creates backup directory
-#  file:
-#    path: /etc/nginx/backup/
-#    state: directory
-
+- name: Check that the location.conf exists
+  stat:
+    path: /etc/nginx/location.conf
+  register: stat_result
 
 - name: Backup configs
   copy: src={{ item.src }} dest={{ item.dest }} remote_src=yes
   with_items:
-      - { src: '/etc/nginx/default.d/location.conf', dest: '/etc/nginx/backup/location.conf.{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}' }
-      - { src: '/etc/nginx/default.d/upstream.conf', dest: '/etc/nginx/backup/upstream.conf.{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}' }
+      - { src: '/etc/nginx/location.conf', dest: '/etc/nginx/backup/location.conf.{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}' }
+      - { src: '/etc/nginx/upstream.conf', dest: '/etc/nginx/backup/upstream.conf.{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}-{{ ansible_date_time.minute }}' }
+  when: stat_result.stat.exists
   tags:
     - backup
 
 - name: Unzip nginx configs
   unarchive:
     src: nginx.zip
-    dest: /etc/nginx/default.d/
+    dest: /etc/nginx/
   tags:
     - unzip
 
-#- name: Check nginx config
-#  shell: "/usr/sbin/nginx -t"
-#  register: nginx_config_status
-#  tags:
-#    - check
+- name: Check nginx config
+  shell: "/usr/sbin/nginx -t"
+  register: nginx_config_status
+  tags:
+    - check
 
-#- name: Restart nginx
-#  service:
-#    name: nginx
-#    state: restarted
-#  when: nginx_config_status.rc == 0
-#  tags:
-#    - restart
-
+- name: Restart nginx
+  service:
+    name: nginx
+    state: restarted
+  when: nginx_config_status.rc == 0
+  tags:
+    - restart
